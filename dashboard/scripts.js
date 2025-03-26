@@ -9,6 +9,10 @@ let filters = {
     security: 'all',
     search: ''
 };
+let currentSort = {
+    column: null,
+    direction: 'asc'
+};
 
 // Initialize charts
 let healthChart = null;
@@ -48,6 +52,9 @@ function setupEventListeners() {
         currentProject = e.target.value;
         updateDashboard();
     });
+    
+    // Setup table header sorting
+    setupTableSorting();
     
     // Import modal events
     document.getElementById('importBtn').addEventListener('click', function() {
@@ -825,6 +832,17 @@ const licenseBadge = `
     });
 }
 
+function showLicenseModal(packageName, license) {
+    // Decode the license text (it was escaped when passed to the onclick handler)
+    const decodedLicense = unescape(license);
+    
+    // Set the modal title and content
+    document.getElementById('licenseContent').textContent = decodedLicense || 'License information not available';
+    
+    // Show the modal
+    document.getElementById('licenseModal').classList.remove('hidden');
+}
+
 function showLicenseDetails(license) {
     // Use modal instead of tooltip for very long licenses
     if (license.length > 500) {
@@ -1045,6 +1063,155 @@ async function importRequirementsFile() {
 }
 
 
+
+// Setup table sorting functionality
+function setupTableSorting() {
+    const table = document.querySelector('.dependency-table');
+    if (!table) return;
+    
+    const headers = table.querySelectorAll('th');
+    
+    headers.forEach((header, index) => {
+        // Skip the Actions column (last column)
+        if (index === headers.length - 1) return;
+        
+        // Add cursor pointer and hover effect
+        header.style.cursor = 'pointer';
+        header.classList.add('hover:bg-gray-200');
+        
+        // Add sort indicators
+        const sortIndicator = document.createElement('span');
+        sortIndicator.className = 'sort-indicator ml-1 opacity-0';
+        sortIndicator.innerHTML = `
+            <svg class="inline-block w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+            </svg>
+        `;
+        header.appendChild(sortIndicator);
+        
+        // Add click event
+        header.addEventListener('click', () => {
+            // Determine column name based on index
+            let column;
+            switch (index) {
+                case 0: column = 'package_name'; break;
+                case 1: column = 'version'; break;
+                case 2: column = 'latest_version'; break;
+                case 3: column = 'has_vulnerabilities'; break;
+                case 4: column = 'health_score'; break;
+                case 5: column = 'abandonment_risk'; break;
+                case 6: column = 'license'; break;
+                case 7: column = 'last_updated'; break;
+                default: column = null;
+            }
+            
+            if (column) {
+                sortDependencies(column);
+                updateSortIndicators(header);
+            }
+        });
+    });
+}
+
+// Sort dependencies by column
+function sortDependencies(column) {
+    // If already sorted by this column, reverse the order
+    if (currentSort.column === column) {
+        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+        currentSort.column = column;
+        currentSort.direction = 'asc';
+    }
+    
+    // Sort the dependencies
+    filteredDependencies.sort((a, b) => {
+        let valueA = a[column];
+        let valueB = b[column];
+        
+        // Handle special cases
+        if (column === 'package_name') {
+            valueA = valueA.toLowerCase();
+            valueB = valueB.toLowerCase();
+        } else if (column === 'version' || column === 'latest_version') {
+            // Simple version comparison (not semantic versioning)
+            return compareVersions(valueA, valueB, currentSort.direction);
+        } else if (column === 'last_updated') {
+            // Date comparison
+            const dateA = valueA ? new Date(valueA) : new Date(0);
+            const dateB = valueB ? new Date(valueB) : new Date(0);
+            return currentSort.direction === 'asc' ? dateA - dateB : dateB - dateA;
+        } else if (column === 'abandonment_risk') {
+            // Risk level comparison
+            const riskOrder = { 'Low': 1, 'Medium': 2, 'High': 3, 'Critical': 4 };
+            valueA = riskOrder[valueA] || 0;
+            valueB = riskOrder[valueB] || 0;
+        }
+        
+        // Default comparison
+        if (valueA < valueB) return currentSort.direction === 'asc' ? -1 : 1;
+        if (valueA > valueB) return currentSort.direction === 'asc' ? 1 : -1;
+        return 0;
+    });
+    
+    // Update the table with sorted data
+    updateDependenciesTable();
+}
+
+// Helper function to compare version strings
+function compareVersions(versionA, versionB, direction) {
+    if (!versionA) return direction === 'asc' ? -1 : 1;
+    if (!versionB) return direction === 'asc' ? 1 : -1;
+    
+    const partsA = versionA.split('.').map(part => parseInt(part, 10) || 0);
+    const partsB = versionB.split('.').map(part => parseInt(part, 10) || 0);
+    
+    for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
+        const partA = partsA[i] || 0;
+        const partB = partsB[i] || 0;
+        
+        if (partA !== partB) {
+            return direction === 'asc' ? partA - partB : partB - partA;
+        }
+    }
+    
+    return 0;
+}
+
+// Update sort indicators in table headers
+function updateSortIndicators(activeHeader) {
+    const headers = document.querySelectorAll('.dependency-table th');
+    
+    headers.forEach(header => {
+        const indicator = header.querySelector('.sort-indicator');
+        if (!indicator) return;
+        
+        if (header === activeHeader) {
+            indicator.classList.remove('opacity-0');
+            
+            // Update the icon based on sort direction
+            if (currentSort.direction === 'asc') {
+                indicator.innerHTML = `
+                    <svg class="inline-block w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                    </svg>
+                `;
+            } else {
+                indicator.innerHTML = `
+                    <svg class="inline-block w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                `;
+            }
+        } else {
+            indicator.classList.add('opacity-0');
+            indicator.innerHTML = `
+                <svg class="inline-block w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                </svg>
+            `;
+        }
+    });
+}
 
 function parseRequirementsFile(content) {
     // Basic parsing of requirements.txt file

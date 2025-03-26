@@ -1,10 +1,10 @@
 # Dependency Health Report
-Generated on 2025-03-26 12:23:47
+Generated on 2025-03-26 12:40:27
 
 ## Summary
 - Total Dependencies: 23
 - Dependencies Needing Updates: 11
-- Dependencies at High/Critical Risk: 10
+- Dependencies at High/Critical Risk: 8
 - Dependencies with Vulnerabilities: 0
 - Healthy Dependencies: 0
 
@@ -17,9 +17,7 @@ No security vulnerabilities detected!
 - **Flask** (3.1.0): High risk, Health Score: 54
 - **Flask-Login** (0.6.3): High risk, Health Score: 48
 - **opencv_python** (4.10.0.84): High risk, Health Score: 45
-- **pillow_heif** (0.21.0): High risk, Health Score: 30
 - **pytesseract** (0.3.13): High risk, Health Score: 47
-- **python-dotenv** (1.0.1): High risk, Health Score: 48
 - **XlsxWriter** (3.2.2): High risk, Health Score: 45
 - **Redis** (5.2.1): High risk, Health Score: 54
 
