@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dependency Details</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <nav class="bg-indigo-600 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">Dependency Health Dashboard</h1>
+            <div class="flex items-center space-x-4">
+                <!-- Dark Mode Toggle -->
+                <button id="darkModeToggle" class="bg-white text-indigo-600 p-2 rounded-md font-medium hover:bg-indigo-100 transition">
+                    <svg id="darkModeIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                    </svg>
+                    <svg id="lightModeIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+
+                <a href="/" class="bg-white text-indigo-600 px-4 py-2 rounded-md font-medium hover:bg-indigo-100 transition">
+                    Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto p-4">
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <!-- Package Header -->
+            <div class="flex items-start justify-between mb-6">
+                <div>
+                    <h1 id="packageName" class="text-3xl font-bold"></h1>
+                    <p id="packageProject" class="text-gray-600 text-lg"></p>
+                </div>
+                <div>
+                    <span id="healthBadge" class="px-3 py-1 rounded-full text-white font-semibold text-sm"></span>
+                    <span id="riskBadge" class="ml-2 px-3 py-1 rounded-full text-white font-semibold text-sm"></span>
+                </div>
+            </div>
+
+            <!-- Version Information -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h2 class="text-gray-500 text-sm font-medium">Current Version</h2>
+                    <p id="currentVersion" class="text-2xl font-semibold"></p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h2 class="text-gray-500 text-sm font-medium">Latest Version</h2>
+                    <p id="latestVersion" class="text-2xl font-semibold"></p>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h2 class="text-gray-500 text-sm font-medium">Last Updated</h2>
+                    <p id="lastUpdated" class="text-2xl font-semibold"></p>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="border-b border-gray-200 mb-6">
+                <nav class="-mb-px flex" aria-label="Tabs">
+                    <button id="overviewTab" class="tab-btn border-indigo-500 text-indigo-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" onclick="showTab('overview')">
+                        Overview
+                    </button>
+                    <button id="healthTab" class="tab-btn border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ml-8" onclick="showTab('health')">
+                        Health Breakdown
+                    </button>
+                    <button id="upgradeTab" class="tab-btn border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ml-8" onclick="showTab('upgrade')">
+                        Upgrade Plan
+                    </button>
+                    <button id="alternativesTab" class="tab-btn border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ml-8" onclick="showTab('alternatives')">
+                        Alternatives
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Tab Content -->
+            <div id="tabContent">
+                <!-- Overview Tab -->
+                <div id="overview" class="tab-content">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h2 class="text-xl font-semibold mb-4">Package Information</h2>
+                            <table class="min-w-full">
+                                <tbody>
+                                    <tr>
+                                        <td class="py-2 text-sm font-medium text-gray-600">Ecosystem</td>
+                                        <td id="ecosystem" class="py-2 text-sm"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-2 text-sm font-medium text-gray-600">License</td>
+                                        <td id="license" class="py-2 text-sm"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-2 text-sm font-medium text-gray-600">Repository</td>
+                                        <td id="repository" class="py-2 text-sm"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-2 text-sm font-medium text-gray-600">Health Score</td>
+                                        <td id="healthScore" class="py-2 text-sm"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-2 text-sm font-medium text-gray-600">Risk Level</td>
+                                        <td id="riskLevel" class="py-2 text-sm"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-semibold mb-4">Project Usage</h2>
+                            <p id="usageInfo" class="text-gray-600 mb-4"></p>
+                            
+                            <h3 class="font-medium text-gray-900 mt-6 mb-2">Key Features</h3>
+                            <ul id="keyFeatures" class="list-disc pl-5 text-gray-600">
+                                <!-- Features will be populated dynamically -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Health Breakdown Tab -->
+                <div id="health" class="tab-content hidden">
+                    <h2 class="text-xl font-semibold mb-4">Health Score Breakdown</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <canvas id="healthChart" height="200"></canvas>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-900 mb-3">Health Factors</h3>
+                            <div id="healthFactors" class="space-y-3">
+                                <!-- Health factors will be added dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upgrade Plan Tab -->
+                <div id="upgrade" class="tab-content hidden">
+                    <h2 class="text-xl font-semibold mb-4">Upgrade Recommendation</h2>
+                    <div id="upgradeRecommendation" class="mb-6">
+                        <!-- Will be populated dynamically -->
+                    </div>
+
+                    <h3 class="font-medium text-gray-900 mb-3">Step-by-Step Upgrade Plan</h3>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <ol id="upgradePlan" class="list-decimal pl-5 space-y-4">
+                            <!-- Steps will be added dynamically -->
+                        </ol>
+                    </div>
+
+                    <h3 class="font-medium text-gray-900 mt-6 mb-3">Breaking Changes</h3>
+                    <div id="breakingChanges" class="bg-yellow-50 p-4 rounded-lg">
+                        <!-- Breaking changes will be added dynamically -->
+                    </div>
+                </div>
+
+                <!-- Alternatives Tab -->
+                <div id="alternatives" class="tab-content hidden">
+                    <h2 class="text-xl font-semibold mb-4">Alternative Packages</h2>
+                    <div id="noAlternatives" class="hidden text-gray-600 italic mb-4">
+                        No alternative packages identified for this dependency.
+                    </div>
+                    <div id="alternativesList" class="space-y-4">
+                        <!-- Alternatives will be added dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Dark Mode Functionality
+        function initializeDarkMode() {
+            // Check for saved theme preference
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.body.classList.add('dark-mode');
+                document.getElementById('darkModeIcon').classList.add('hidden');
+                document.getElementById('lightModeIcon').classList.remove('hidden');
+            }
+        }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            
+            // Update icons
+            const darkIcon = document.getElementById('darkModeIcon');
+            const lightIcon = document.getElementById('lightModeIcon');
+            
+            if (document.body.classList.contains('dark-mode')) {
+                darkIcon.classList.add('hidden');
+                lightIcon.classList.remove('hidden');
+                localStorage.theme = 'dark';
+            } else {
+                darkIcon.classList.remove('hidden');
+                lightIcon.classList.add('hidden');
+                localStorage.theme = 'light';
+            }
+            
+            // Update chart colors if charts are initialized
+            if (window.healthChart) {
+                updateChartColors();
+            }
+        }
+        
+        function updateChartColors() {
+            const isDark = document.body.classList.contains('dark-mode');
+            const textColor = isDark ? '#fff' : '#666';
+            
+            if (window.healthChart) {
+                window.healthChart.options.plugins.legend.labels.color = textColor;
+                window.healthChart.options.scales.r.grid.color = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+                window.healthChart.options.scales.r.angleLines.color = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+                window.healthChart.update();
+            }
+        }
+        
+        // Set up dark mode event listener
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDarkMode();
+            document.getElementById('darkModeToggle').addEventListener('click', toggleDarkMode);
+        });
+
+        // Get package name from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const packageName = urlParams.get('package');
+        const project = urlParams.get('project');
+        
+        // Dependency data (would be loaded from API in real implementation)
+        let dependencyData = null;
+        
+        // Load dependency data
+        async function loadDependencyData() {
+            try {
+                const response = await fetch('/reports/dependencies.json');
+                if (!response.ok) {
+                    throw new Error('Failed to load dependency data');
+                }
+                
+                const allDependencies = await response.json();
+                
+                // Find the specific dependency
+                dependencyData = allDependencies.find(dep => 
+                    dep.package_name === packageName && 
+                    dep.project === project
+                );
+                
+                if (!dependencyData) {
+                    throw new Error('Dependency not found');
+                }
+                
+                populateData();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                // For demo, load with sample data
+                loadSampleData();
+            }
+        }
+        
+        // Load sample data for demo purposes
+        function loadSampleData() {
+            dependencyData = {
+                package_name: packageName || 'sample-package',
+                project: project || 'Demo Project',
+                version: '1.2.3',
+                latest_version: '2.0.0',
+                ecosystem: 'npm',
+                license: 'MIT',
+                repository_url: 'https://github.com/sample/sample-package',
+                health_score: 42,
+                abandonment_risk: 'High',
+                last_updated: '2024-12-01'
+            };
+            
+            populateData();
+        }
+        
+        // Populate the UI with data
+        function populateData() {
+            // Set basic package info
+            document.getElementById('packageName').textContent = dependencyData.package_name;
+            document.getElementById('packageProject').textContent = dependencyData.project;
+            document.getElementById('currentVersion').textContent = dependencyData.version;
+            document.getElementById('latestVersion').textContent = dependencyData.latest_version;
+            document.getElementById('lastUpdated').textContent = formatDate(dependencyData.last_updated);
+            
+            // Set badges
+            const healthBadge = document.getElementById('healthBadge');
+            const score = dependencyData.health_score;
+            
+            if (score > 80) {
+                healthBadge.textContent = `Health: ${score}`;
+                healthBadge.classList.add('bg-green-500');
+            } else if (score > 60) {
+                healthBadge.textContent = `Health: ${score}`;
+                healthBadge.classList.add('bg-green-500');
+            } else if (score > 40) {
+                healthBadge.textContent = `Health: ${score}`;
+                healthBadge.classList.add('bg-yellow-500');
+            } else if (score > 20) {
+                healthBadge.textContent = `Health: ${score}`;
+                healthBadge.classList.add('bg-orange-500');
+            } else {
+                healthBadge.textContent = `Health: ${score}`;
+                healthBadge.classList.add('bg-red-500');
+            }
+            
+            const riskBadge = document.getElementById('riskBadge');
+            const risk = dependencyData.abandonment_risk;
+            
+            if (risk === 'Low') {
+                riskBadge.textContent = 'Low Risk';
+                riskBadge.classList.add('bg-green-500');
+            } else if (risk === 'Medium') {
+                riskBadge.textContent = 'Medium Risk';
+                riskBadge.classList.add('bg-yellow-500');
+            } else if (risk === 'High') {
+                riskBadge.textContent = 'High Risk';
+                riskBadge.classList.add('bg-orange-500');
+            } else {
+                riskBadge.textContent = 'Critical Risk';
+                riskBadge.classList.add('bg-red-500');
+            }
+            
+            // Set package information
+            document.getElementById('ecosystem').textContent = dependencyData.ecosystem;
+            document.getElementById('license').textContent = dependencyData.license;
+            document.getElementById('repository').innerHTML = dependencyData.repository_url ? 
+                `<a href="${dependencyData.repository_url}" target="_blank" class="text-blue-600 hover:underline">${dependencyData.repository_url}</a>` : 
+                'Not available';
+            document.getElementById('healthScore').textContent = dependencyData.health_score;
+            document.getElementById('riskLevel').textContent = dependencyData.abandonment_risk;
+            
+            // Package usage info (demo data)
+            let usageInfo;
+            if (dependencyData.ecosystem === 'npm') {
+                usageInfo = `This JavaScript package is used for client-side functionality in ${dependencyData.project}.`;
+            } else if (dependencyData.ecosystem === 'pypi') {
+                usageInfo = `This Python package provides backend functionality for ${dependencyData.project}.`;
+            } else {
+                usageInfo = `This package is a dependency for ${dependencyData.project}.`;
+            }
+            document.getElementById('usageInfo').textContent = usageInfo;
+            
+            // Add key features based on package (demo data)
+            const featuresElement = document.getElementById('keyFeatures');
+            featuresElement.innerHTML = '';
+            
+            // Demo features based on package name
+            let features = [];
+            if (dependencyData.package_name === 'anthropic') {
+                features = [
+                    'AI integration for image analysis',
+                    'Claude API client',
+                    'Natural language processing'
+                ];
+            } else if (dependencyData.package_name === 'Flask') {
+                features = [
+                    'Web application framework',
+                    'Routing system',
+                    'Template rendering',
+                    'Development server'
+                ];
+            } else if (dependencyData.package_name === 'react') {
+                features = [
+                    'UI component system',
+                    'Virtual DOM',
+                    'State management',
+                    'JSX support'
+                ];
+            } else {
+                features = [
+                    'Core functionality for project',
+                    'Integration with other systems',
+                    'Performance optimization'
+                ];
+            }
+            
+            features.forEach(feature => {
+                const li = document.createElement('li');
+                li.textContent = feature;
+                featuresElement.appendChild(li);
+            });
+            
+            // Populate health breakdown
+            populateHealthBreakdown();
+            
+            // Populate upgrade plan
+            populateUpgradePlan();
+            
+            // Populate alternatives
+            populateAlternatives();
+        }
+        
+        // Populate health breakdown tab
+        function populateHealthBreakdown() {
+            // Create health factors
+            const healthFactors = [
+                { name: 'Update Frequency', score: 7, maxScore: 10, description: 'How often the package is updated' },
+                { name: 'Community Support', score: 6, maxScore: 10, description: 'Level of community engagement' },
+                { name: 'Adoption Rate', score: 8, maxScore: 10, description: 'How widely the package is used' },
+                { name: 'Documentation', score: 5, maxScore: 10, description: 'Quality and completeness of documentation' },
+                { name: 'Security', score: 9, maxScore: 10, description: 'Security track record and response' }
+            ];
+            
+            const factorsElement = document.getElementById('healthFactors');
+            factorsElement.innerHTML = '';
+            
+            healthFactors.forEach(factor => {
+                const percentage = (factor.score / factor.maxScore) * 100;
+                const color = percentage > 70 ? 'bg-green-500' : percentage > 40 ? 'bg-yellow-500' : 'bg-red-500';
+                
+                const factorHtml = `
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sm font-medium text-gray-700">${factor.name}</span>
+                            <span class="text-sm font-medium text-gray-700">${factor.score}/${factor.maxScore}</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="${color} h-2.5 rounded-full" style="width: ${percentage}%"></div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">${factor.description}</p>
+                    </div>
+                `;
+                
+                factorsElement.innerHTML += factorHtml;
+            });
+            
+            // Create chart with dark mode support
+            const ctx = document.getElementById('healthChart').getContext('2d');
+            const isDark = document.body.classList.contains('dark-mode');
+            const textColor = isDark ? '#fff' : '#666';
+            const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+            
+            window.healthChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: healthFactors.map(f => f.name),
+                    datasets: [{
+                        label: 'Health Score',
+                        data: healthFactors.map(f => f.score),
+                        backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                        borderColor: 'rgb(99, 102, 241)',
+                        pointBackgroundColor: 'rgb(99, 102, 241)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgb(99, 102, 241)'
+                    }]
+                },
+                options: {
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: textColor
+                            }
+                        }
+                    },
+                    scales: {
+                        r: {
+                            angleLines: {
+                                display: true,
+                                color: gridColor
+                            },
+                            grid: {
+                                color: gridColor
+                            },
+                            pointLabels: {
+                                color: textColor
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 10
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Populate upgrade plan tab
+        function populateUpgradePlan() {
+            const needsUpdate = dependencyData.version !== dependencyData.latest_version;
+            const upgradeRec = document.getElementById('upgradeRecommendation');
+            const upgradePlan = document.getElementById('upgradePlan');
+            const breakingChanges = document.getElementById('breakingChanges');
+            
+            if (!needsUpdate) {
+                upgradeRec.innerHTML = `
+                    <div class="p-4 rounded-lg bg-green-50 text-green-800">
+                        <div class="flex">
+                            <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <p class="font-medium">This package is currently up-to-date with the latest version (${dependencyData.version}).</p>
+                        </div>
+                    </div>
+                `;
+                upgradePlan.innerHTML = `<li>No upgrade necessary at this time.</li>`;
+                breakingChanges.innerHTML = `<p>No breaking changes to consider since the package is already at the latest version.</p>`;
+                return;
+            }
+            
+            // Package needs update
+            if (dependencyData.abandonment_risk === 'High' || dependencyData.abandonment_risk === 'Critical') {
+                upgradeRec.innerHTML = `
+                    <div class="p-4 rounded-lg bg-red-50 text-red-800">
+                        <div class="flex">
+                            <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                            </svg>
+                            <p class="font-medium">High Risk: Consider replacing this package instead of updating. Current version ${dependencyData.version} is outdated (latest: ${dependencyData.latest_version}).</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                upgradeRec.innerHTML = `
+                    <div class="p-4 rounded-lg bg-yellow-50 text-yellow-800">
+                        <div class="flex">
+                            <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zm-1 9a1 1 0 11-2 0 1 1 0 012 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            <p class="font-medium">Recommended: Update from ${dependencyData.version} to ${dependencyData.latest_version} to receive the latest features and security fixes.</p>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Generate update steps based on ecosystem
+            upgradePlan.innerHTML = '';
+            if (dependencyData.ecosystem === 'npm') {
+                upgradePlan.innerHTML = `
+                    <li>
+                        <strong>Backup your package.json and package-lock.json</strong>
+                        <p class="text-gray-600 mt-1">Create backups before updating to easily roll back if needed.</p>
+                        <pre class="bg-gray-800 text-white p-2 rounded text-sm mt-2">cp package.json package.json.bak && cp package-lock.json package-lock.json.bak</pre>
+                    </li>
+                    <li>
+                        <strong>Update the package to the latest version</strong>
+                        <p class="text-gray-600 mt-1">Use npm to update to the specific version or to the latest.</p>
+                        <pre class="bg-gray-800 text-white p-2 rounded text-sm mt-2">npm install ${dependencyData.package_name}@${dependencyData.latest_version} --save</pre>
+                    </li>
+                    <li>
+                        <strong>Run your test suite</strong>
+                        <p class="text-gray-600 mt-1">Ensure everything works as expected with the new version.</p>
+                        <pre class="bg-gray-800 text-white p-2 rounded text-sm mt-2">npm test</pre>
+                    </li>
+                    <li>
+                        <strong>Check for any deprecated features or warnings</strong>
+                        <p class="text-gray-600 mt-1">Look for console warnings during build/test that might indicate deprecated API usage.</p>
+                    </li>
+                    <li>
+                        <strong>Commit your changes</strong>
+                        <p class="text-gray-600 mt-1">Once everything is working, commit your changes.</p>
+                        <pre class="bg-gray-800 text-white p-2 rounded text-sm mt-2">git add package.json package-lock.json && git commit -m "Update ${dependencyData.package_name} to ${dependencyData.latest_version}"</pre>
+                    </li>
+                `;
+            } else if (dependencyData.ecosystem === 'pypi') {
+                upgradePlan.innerHTML = `
+                    <li>
+                        <strong>Create a virtual environment for testing (recommended)</strong>
+                        <p class="text-gray-600 mt-1">Test the update in isolation first.</p>
+                        <pre class="bg-gray-800 text-white p-2 rounded text-sm mt-2">python -m venv test_venv
+source test_venv/bin/activate  # On Windows: test_venv\\Scripts\\activate</pre>
+                    </li>
+                    <li>
+                        <strong>Install the new version</strong>
+                        <p class="text-gray-600 mt-1">Update to the latest version.</p>
+                        <pre class="bg-gray-800 text-white p-2 rounded text-sm mt-2">pip install ${dependencyData.package_name}==${dependencyData.latest_version}</pre>
+                    </li>
+                    <li>
+                        <strong>Run your test suite</strong>
+                        <p class="text-gray-600 mt-1">Verify everything works correctly.</p>
+                        <pre class="bg-gray-800 text-white p-2 rounded text-sm mt-2">pytest  # or your preferred test command</pre>
+                    </li>
+                    <li>
+                        <strong>Update your requirements.txt or setup.py</strong>
+                        <p class="text-gray-600 mt-1">Update your dependency specifications.</p>
+                        <pre class="bg-gray-800 text-white p-2 rounded text-sm mt-2">sed -i 's/${dependencyData.package_name}==${dependencyData.version}/${dependencyData.package_name}==${dependencyData.latest_version}/g' requirements.txt</pre>
+                    </li>
+                    <li>
+                        <strong>Update the production environment</strong>
+                        <p class="text-gray-600 mt-1">After successful testing, update your production environment.</p>
+                    </li>
+                `;
+            }
+            
+            // Create breaking changes section based on the package
+            let breakingChangesHtml = '';
+            if (dependencyData.package_name === 'anthropic') {
+                breakingChangesHtml = `
+                    <ul class="list-disc pl-5">
+                        <li>API changes in the client interface</li>
+                        <li>New authentication requirements</li>
+                        <li>Response format changes</li>
+                    </ul>
+                    <p class="mt-2 text-sm">Review the <a href="https://github.com/anthropics/anthropic-sdk-python/releases" target="_blank" class="text-blue-600 hover:underline">release notes</a> for detailed information.</p>
+                `;
+            } else if (dependencyData.package_name === 'Flask') {
+                breakingChangesHtml = `
+                    <ul class="list-disc pl-5">
+                        <li>Changes to route registration</li>
+                        <li>Request handling modifications</li>
+                        <li>Template rendering updates</li>
+                    </ul>
+                    <p class="mt-2 text-sm">Review the <a href="https://flask.palletsprojects.com/en/3.0.x/changes/" target="_blank" class="text-blue-600 hover:underline">changelog</a> for detailed information.</p>
+                `;
+            } else {
+                breakingChangesHtml = `
+                    <p>Unknown breaking changes. Please review the changelog or release notes for this package before upgrading.</p>
+                    <p class="mt-2 text-sm">Consider creating a separate test environment to validate the update before applying to production.</p>
+                `;
+            }
+            
+            breakingChanges.innerHTML = breakingChangesHtml;
+        }
+        
+        // Populate alternatives tab
+        function populateAlternatives() {
+            const alternativesList = document.getElementById('alternativesList');
+            const noAlternatives = document.getElementById('noAlternatives');
+            
+            // Generate alternatives based on package name (demo data)
+            let alternatives = [];
+            
+            if (dependencyData.package_name === 'anthropic') {
+                alternatives = [
+                    { name: 'openai', description: 'Python client for OpenAI API', pros: ['Widely adopted', 'Comprehensive documentation', 'Multiple model support'], cons: ['Different pricing model', 'Different capabilities'] },
+                    { name: 'langchain', description: 'Framework for LLM applications', pros: ['Provider-agnostic', 'Advanced workflows', 'Active community'], cons: ['Steeper learning curve', 'More complex implementation'] }
+                ];
+            } else if (dependencyData.package_name === 'Flask') {
+                alternatives = [
+                    { name: 'Django', description: 'Full-featured web framework', pros: ['More built-in features', 'Admin interface', 'ORM included'], cons: ['Heavier', 'Less flexibility', 'Steeper learning curve'] },
+                    { name: 'FastAPI', description: 'Modern, fast web framework', pros: ['Automatic OpenAPI docs', 'Better performance', 'Type hints support'], cons: ['Newer ecosystem', 'Different design philosophy'] }
+                ];
+            } else if (dependencyData.package_name === 'cx_Oracle') {
+                alternatives = [
+                    { name: 'oracledb', description: 'Official Oracle driver for Python', pros: ['Modern architecture', 'Active development', 'Official support'], cons: ['API differences', 'Migration effort required'] },
+                    { name: 'SQLAlchemy + oracle dialect', description: 'ORM with Oracle support', pros: ['Database agnostic', 'Higher level abstractions', 'Modern patterns'], cons: ['Additional dependency', 'Learning curve'] }
+                ];
+            }
+            
+            if (alternatives.length === 0) {
+                noAlternatives.classList.remove('hidden');
+                alternativesList.classList.add('hidden');
+                return;
+            }
+            
+            alternativesList.innerHTML = '';
+            alternatives.forEach(alt => {
+                const altHtml = `
+                    <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+                        <div class="px-4 py-5 sm:px-6">
+                            <h3 class="text-lg font-medium text-gray-900">${alt.name}</h3>
+                            <p class="mt-1 max-w-2xl text-sm text-gray-500">${alt.description}</p>
+                        </div>
+                        <div class="border-t border-gray-200 px-4 py-5 sm:px-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-500">Pros</h4>
+                                    <ul class="mt-2 text-sm text-gray-900 list-disc pl-5 space-y-1">
+                                        ${alt.pros.map(pro => `<li>${pro}</li>`).join('')}
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-500">Cons</h4>
+                                    <ul class="mt-2 text-sm text-gray-900 list-disc pl-5 space-y-1">
+                                        ${alt.cons.map(con => `<li>${con}</li>`).join('')}
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <a href="https://pypi.org/project/${alt.name}" target="_blank" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                    Learn More
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                alternativesList.innerHTML += altHtml;
+            });
+            
+            noAlternatives.classList.add('hidden');
+            alternativesList.classList.remove('hidden');
+        }
+        
+        // Format date string
+        function formatDate(dateString) {
+            if (!dateString) return 'Unknown';
+            
+            const date = new Date(dateString);
+            if (isNaN(date)) return dateString;
+            
+            return date.toLocaleDateString();
+        }
+        
+        // Show tab content
+        function showTab(tabId) {
+            // Hide all tab content
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabId).classList.remove('hidden');
+            
+            // Update tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('border-indigo-500', 'text-indigo-600');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+            
+            document.getElementById(`${tabId}Tab`).classList.remove('border-transparent', 'text-gray-500');
+            document.getElementById(`${tabId}Tab`).classList.add('border-indigo-500', 'text-indigo-600');
+        }
+        
+        // Load data when page loads
+        window.addEventListener('DOMContentLoaded', loadDependencyData);
+    </script>
+</body>
+</html>

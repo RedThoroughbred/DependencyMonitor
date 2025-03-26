@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dependency Health Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.2/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.6/purify.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <nav class="bg-indigo-600 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">Dependency Health Dashboard</h1>
+            <div class="flex items-center space-x-4">
+                <button id="refreshBtn" class="bg-white text-indigo-600 px-4 py-2 rounded-md font-medium hover:bg-indigo-100 transition">
+                    Refresh Data
+                </button>
+                <div class="relative">
+                    <select id="projectSelector" class="bg-white text-indigo-600 px-4 py-2 rounded-md font-medium appearance-none pr-8">
+                        <option value="all">All Projects</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-indigo-600">
+                        <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                            <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto p-4">
+        <!-- Overview Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h2 class="text-gray-500 text-sm font-medium">Total Dependencies</h2>
+                <div class="mt-2 flex items-end justify-between">
+                    <p id="totalDeps" class="text-3xl font-semibold text-gray-900">0</p>
+                    <div class="flex items-center text-green-500">
+                        <span class="text-sm font-medium">Tracked</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h2 class="text-gray-500 text-sm font-medium">Needs Update</h2>
+                <div class="mt-2 flex items-end justify-between">
+                    <p id="needsUpdateDeps" class="text-3xl font-semibold text-yellow-500">0</p>
+                    <div class="flex items-center text-yellow-500">
+                        <span class="text-sm font-medium">Dependencies</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h2 class="text-gray-500 text-sm font-medium">Vulnerabilities</h2>
+                <div class="mt-2 flex items-end justify-between">
+                    <p id="vulnerableDeps" class="text-3xl font-semibold text-red-600">0</p>
+                    <div class="flex items-center text-red-600">
+                        <span class="text-sm font-medium">Dependencies</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h2 class="text-gray-500 text-sm font-medium">High Risk</h2>
+                <div class="mt-2 flex items-end justify-between">
+                    <p id="highRiskDeps" class="text-3xl font-semibold text-red-500">0</p>
+                    <div class="flex items-center text-red-500">
+                        <span class="text-sm font-medium">Dependencies</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h2 class="text-gray-500 text-sm font-medium">Average Health</h2>
+                <div class="mt-2 flex items-end justify-between">
+                    <p id="avgHealth" class="text-3xl font-semibold text-indigo-500">0</p>
+                    <div class="flex items-center text-indigo-500">
+                        <span class="text-sm font-medium">Score</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    
+        <!-- Charts Row -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h2 class="text-lg font-semibold mb-4">Health Distribution</h2>
+                <canvas id="healthChart" height="200"></canvas>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h2 class="text-lg font-semibold mb-4">Risk Assessment</h2>
+                <canvas id="riskChart" height="200"></canvas>
+            </div>
+        </div>
+    
+        <!-- Latest Report -->
+        <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+            <h2 class="text-lg font-semibold mb-4">Latest Report</h2>
+            <div id="reportContent" class="prose max-w-none">
+                Loading report...
+            </div>
+        </div>
+    
+        <!-- Dependencies Table -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+            <div class="px-4 py-5 border-b border-gray-200 sm:px-6">
+                <h2 class="text-lg font-semibold">All Dependencies</h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    Complete list of tracked dependencies and their health metrics.
+                </p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Package
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Version
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Latest
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Security
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Health
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Risk
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Last Updated
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="dependenciesTable" class="bg-white divide-y divide-gray-200">
+                        <tr>
+                            <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500">
+                                Loading dependencies...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+        // Sample data structure
+        let allDependencies = [];
+        let projects = [];
+        let currentProject = 'all';
+    
+        // Initialize charts
+        let healthChart = null;
+        let riskChart = null;
+    
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharts();
+            loadData();
+    
+            // Event listeners
+            document.getElementById('refreshBtn').addEventListener('click', loadData);
+            document.getElementById('projectSelector').addEventListener('change', function(e) {
+                currentProject = e.target.value;
+                updateDashboard();
+            });
+        });
+    
+        function initCharts() {
+            // Health score distribution chart
+            const healthCtx = document.getElementById('healthChart').getContext('2d');
+            healthChart = new Chart(healthCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['0-20', '21-40', '41-60', '61-80', '81-100'],
+                    datasets: [{
+                        label: 'Dependencies',
+                        data: [0, 0, 0, 0, 0],
+                        backgroundColor: [
+                            'rgba(239, 68, 68, 0.7)',
+                            'rgba(249, 115, 22, 0.7)',
+                            'rgba(234, 179, 8, 0.7)',
+                            'rgba(34, 197, 94, 0.7)',
+                            'rgba(16, 185, 129, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgb(239, 68, 68)',
+                            'rgb(249, 115, 22)',
+                            'rgb(234, 179, 8)',
+                            'rgb(34, 197, 94)',
+                            'rgb(16, 185, 129)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+    
+            // Risk assessment chart
+            const riskCtx = document.getElementById('riskChart').getContext('2d');
+            riskChart = new Chart(riskCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Low', 'Medium', 'High', 'Critical'],
+                    datasets: [{
+                        data: [0, 0, 0, 0],
+                        backgroundColor: [
+                            'rgba(16, 185, 129, 0.7)',
+                            'rgba(234, 179, 8, 0.7)',
+                            'rgba(249, 115, 22, 0.7)',
+                            'rgba(239, 68, 68, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgb(16, 185, 129)',
+                            'rgb(234, 179, 8)',
+                            'rgb(249, 115, 22)',
+                            'rgb(239, 68, 68)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+    
+        async function loadData() {
+            try {
+                // In a real implementation, this would load from your API
+                // For demo purposes, we'll simulate loading from a JSON file
+                const response = await fetch('reports/dependencies.json');
+                if (!response.ok) {
+                    throw new Error('Failed to load dependency data');
+                }
+                
+                allDependencies = await response.json();
+                
+                // Extract unique projects
+                projects = ['all', ...new Set(allDependencies.map(dep => dep.project))];
+                
+                // Update project selector
+                const projectSelector = document.getElementById('projectSelector');
+                projectSelector.innerHTML = '';
+                projects.forEach(project => {
+                    const option = document.createElement('option');
+                    option.value = project;
+                    option.textContent = project === 'all' ? 'All Projects' : project;
+                    projectSelector.appendChild(option);
+                });
+                
+                // Load report content
+                await loadReport();
+                
+                // Update the dashboard with the loaded data
+                updateDashboard();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                
+                // For demonstration, load with sample data
+                loadSampleData();
+            }
+        }
+    
+        function loadSampleData() {
+            // Sample data for demonstration
+            allDependencies = [
+                { project: 'Frontend', package_name: 'react', version: '17.0.2', latest_version: '18.2.0', health_score: 95, abandonment_risk: 'Low', last_updated: '2023-01-15', has_vulnerabilities: false },
+                { project: 'Frontend', package_name: 'redux', version: '4.1.0', latest_version: '4.2.1', health_score: 88, abandonment_risk: 'Low', last_updated: '2023-03-22', has_vulnerabilities: false },
+                { project: 'Frontend', package_name: 'lodash', version: '4.17.20', latest_version: '4.17.21', health_score: 92, abandonment_risk: 'Low', last_updated: '2022-11-10', has_vulnerabilities: true, vulnerability_count: 1, vulnerability_details: [{ severity: 'Medium', summary: 'Prototype pollution in _.merge' }], safe_upgrade_version: '4.17.21' },
+                { project: 'Backend', package_name: 'express', version: '4.17.1', latest_version: '4.18.2', health_score: 90, abandonment_risk: 'Low', last_updated: '2023-02-05', has_vulnerabilities: false },
+                { project: 'Backend', package_name: 'mongoose', version: '5.12.3', latest_version: '6.10.0', health_score: 85, abandonment_risk: 'Low', last_updated: '2023-01-20', has_vulnerabilities: false },
+                { project: 'Backend', package_name: 'outdated-pkg', version: '1.0.0', latest_version: '2.3.0', health_score: 45, abandonment_risk: 'High', last_updated: '2021-06-15', has_vulnerabilities: true, vulnerability_count: 2, vulnerability_details: [{ severity: 'Critical', summary: 'Remote code execution vulnerability' }, { severity: 'High', summary: 'Information disclosure' }], safe_upgrade_version: '2.3.0' }
+            ];
+            
+            projects = ['all', 'Frontend', 'Backend'];
+            
+            // Update project selector
+            const projectSelector = document.getElementById('projectSelector');
+            projectSelector.innerHTML = '';
+            projects.forEach(project => {
+                const option = document.createElement('option');
+                option.value = project;
+                option.textContent = project === 'all' ? 'All Projects' : project;
+                projectSelector.appendChild(option);
+            });
+            
+            // Create sample report
+            document.getElementById('reportContent').innerHTML = `
+                <h1>Dependency Health Report</h1>
+                <p>Generated on ${new Date().toLocaleDateString()}</p>
+                
+                <h2>Summary</h2>
+                <ul>
+                    <li>Total Dependencies: 6</li>
+                    <li>Dependencies Needing Updates: 4</li>
+                    <li>Dependencies at High/Critical Risk: 1</li>
+                    <li>Healthy Dependencies: 4</li>
+                </ul>
+                
+                <h2>High Risk Dependencies</h2>
+                <ul>
+                    <li><strong>outdated-pkg</strong> (1.0.0): High risk, Health Score: 45</li>
+                </ul>
+            `;
+            
+            updateDashboard();
+        }
+    
+        async function loadReport() {
+            try {
+                const response = await fetch('reports/dependency_report.md');
+                if (!response.ok) {
+                    throw new Error('Failed to load report');
+                }
+                
+                const markdown = await response.text();
+                const html = DOMPurify.sanitize(marked.parse(markdown));
+                document.getElementById('reportContent').innerHTML = html;
+            } catch (error) {
+                console.error('Error loading report:', error);
+                document.getElementById('reportContent').innerHTML = '<p>Error loading report. Please try again later.</p>';
+            }
+        }
+    
+        function updateDashboard() {
+            // Filter dependencies by selected project
+            const filteredDeps = currentProject === 'all' 
+                ? allDependencies 
+                : allDependencies.filter(dep => dep.project === currentProject);
+            
+            // Update summary cards
+            document.getElementById('totalDeps').textContent = filteredDeps.length;
+            
+            const needsUpdate = filteredDeps.filter(dep => 
+                dep.version !== dep.latest_version
+            ).length;
+            document.getElementById('needsUpdateDeps').textContent = needsUpdate;
+            
+            const vulnerable = filteredDeps.filter(dep => 
+                dep.has_vulnerabilities === true
+            ).length;
+            document.getElementById('vulnerableDeps').textContent = vulnerable;
+            
+            const highRisk = filteredDeps.filter(dep => 
+                dep.abandonment_risk === 'High' || dep.abandonment_risk === 'Critical'
+            ).length;
+            document.getElementById('highRiskDeps').textContent = highRisk;
+            
+            const avgHealth = filteredDeps.length > 0 
+                ? Math.round(filteredDeps.reduce((sum, dep) => sum + dep.health_score, 0) / filteredDeps.length) 
+                : 0;
+            document.getElementById('avgHealth').textContent = avgHealth;
+            
+            // Update health distribution chart
+            const healthDistribution = [0, 0, 0, 0, 0];
+            filteredDeps.forEach(dep => {
+                const score = dep.health_score;
+                if (score <= 20) healthDistribution[0]++;
+                else if (score <= 40) healthDistribution[1]++;
+                else if (score <= 60) healthDistribution[2]++;
+                else if (score <= 80) healthDistribution[3]++;
+                else healthDistribution[4]++;
+            });
+            
+            healthChart.data.datasets[0].data = healthDistribution;
+            healthChart.update();
+            
+            // Update risk assessment chart
+            const riskDistribution = [0, 0, 0, 0]; // Low, Medium, High, Critical
+            filteredDeps.forEach(dep => {
+                const risk = dep.abandonment_risk;
+                if (risk === 'Low') riskDistribution[0]++;
+                else if (risk === 'Medium') riskDistribution[1]++;
+                else if (risk === 'High') riskDistribution[2]++;
+                else if (risk === 'Critical') riskDistribution[3]++;
+            });
+            
+            riskChart.data.datasets[0].data = riskDistribution;
+            riskChart.update();
+            
+            // Update dependencies table
+            const tableBody = document.getElementById('dependenciesTable');
+            
+            if (filteredDeps.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-500">
+                            No dependencies found.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tableBody.innerHTML = '';
+            filteredDeps.forEach(dep => {
+                const needsUpdate = dep.version !== dep.latest_version;
+                
+                // Create health badge
+                let healthBadge;
+                const score = dep.health_score;
+                if (score > 80) {
+                    healthBadge = `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">${score}</span>`;
+                } else if (score > 60) {
+                    healthBadge = `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">${score}</span>`;
+                } else if (score > 40) {
+                    healthBadge = `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">${score}</span>`;
+                } else if (score > 20) {
+                    healthBadge = `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">${score}</span>`;
+                } else {
+                    healthBadge = `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">${score}</span>`;
+                }
+                
+                // Create risk badge
+                let riskBadge;
+                const risk = dep.abandonment_risk;
+                if (risk === 'Low') {
+                    riskBadge = `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Low</span>`;
+                } else if (risk === 'Medium') {
+                    riskBadge = `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Medium</span>`;
+                } else if (risk === 'High') {
+                    riskBadge = `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">High</span>`;
+                } else {
+                    riskBadge = `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Critical</span>`;
+                }
+                
+                // Create security badge
+                let securityBadge = `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Secure</span>`;
+                
+                if (dep.has_vulnerabilities) {
+                    const vulnCount = dep.vulnerability_count || 0;
+                    let severityClass = "bg-yellow-100 text-yellow-800";
+                    
+                    // Check for critical or high severity vulnerabilities
+                    if (dep.vulnerability_details && dep.vulnerability_details.some(v => v.severity === "Critical")) {
+                        severityClass = "bg-red-100 text-red-800 font-bold";
+                    } else if (dep.vulnerability_details && dep.vulnerability_details.some(v => v.severity === "High")) {
+                        severityClass = "bg-red-100 text-red-800";
+                    } else if (dep.vulnerability_details && dep.vulnerability_details.some(v => v.severity === "Medium")) {
+                        severityClass = "bg-orange-100 text-orange-800";
+                    }
+                    
+                    securityBadge = `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${severityClass}">
+                        ${vulnCount} ${vulnCount === 1 ? 'vulnerability' : 'vulnerabilities'}
+                    </span>`;
+                    
+                    // Add safe version recommendation if available
+                    if (dep.safe_upgrade_version) {
+                        securityBadge += `<div class="mt-1 text-xs text-green-600">Fix in v${dep.safe_upgrade_version}</div>`;
+                    }
+                }
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${dep.package_name}</div>
+                        <div class="text-sm text-gray-500">${dep.project}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${dep.version}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm ${needsUpdate ? 'font-semibold text-yellow-600' : 'text-gray-500'}">
+                            ${dep.latest_version}
+                            ${needsUpdate ? '<span class="ml-1">→</span>' : ''}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        ${securityBadge}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        ${healthBadge}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        ${riskBadge}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${dep.last_updated ? new Date(dep.last_updated).toLocaleDateString() : 'Unknown'}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <a href="/details.html?package=${dep.package_name}&project=${dep.project}" class="text-indigo-600 hover:text-indigo-900">Details</a>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+    </script>

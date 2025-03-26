@@ -1,0 +1,175 @@
+/* Dark Mode Styling */
+.dark-mode {
+    background-color: #1f2937;
+    color: #f9fafb;
+}
+
+.dark-mode .bg-white {
+    background-color: #374151;
+    color: #f9fafb;
+}
+
+.dark-mode .bg-gray-50 {
+    background-color: #4b5563;
+    color: #f9fafb;
+}
+
+.dark-mode .bg-gray-100 {
+    background-color: #374151;
+    color: #f9fafb;
+}
+
+.dark-mode .text-gray-900 {
+    color: #f9fafb;
+}
+
+.dark-mode .text-gray-800 {
+    color: #e5e7eb;
+}
+
+.dark-mode .text-gray-700 {
+    color: #d1d5db;
+}
+
+.dark-mode .text-gray-600 {
+    color: #9ca3af;
+}
+
+.dark-mode .text-gray-500 {
+    color: #9ca3af;
+}
+
+.dark-mode .border-gray-200 {
+    border-color: #4b5563;
+}
+
+.dark-mode .prose {
+    color: #d1d5db;
+}
+
+.dark-mode table thead {
+    background-color: #4b5563;
+}
+
+.dark-mode table tbody {
+    background-color: #374151;
+}
+
+/* Notification System */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    max-width: 400px;
+    z-index: 50;
+    transform: translateX(420px);
+    transition: transform 0.3s ease-in-out;
+}
+
+.notification.show {
+    transform: translateX(0);
+}
+
+/* Table Styling */
+.dependency-table {
+    width: 100%;
+    table-layout: fixed;
+}
+
+.dependency-table th, 
+.dependency-table td {
+    padding: 8px;
+    text-align: left;
+    white-space: normal;
+    word-break: break-word;
+}
+
+.dependency-table th {
+    position: sticky;
+    top: 0;
+    background-color: #f9fafb;
+    z-index: 10;
+}
+
+.dark-mode .dependency-table th {
+    background-color: #4b5563;
+}
+
+.table-container {
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+/* License Column */
+.license-cell {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Modals */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.modal-content {
+    background-color: white;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    max-width: 32rem;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.dark-mode .modal-content {
+    background-color: #374151;
+}
+
+/* Fix for license tooltip/popover */
+.license-tooltip {
+  position: absolute;
+  max-width: 300px;
+  z-index: 100;
+  padding: 10px;
+  border-radius: 6px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  font-size: 0.75rem;
+  word-wrap: break-word;
+  overflow-y: auto;
+  max-height: 200px;
+  display: none;
+}
+
+.dark-mode .license-tooltip {
+  background-color: #4b5563;
+  color: #f9fafb;
+  border: 1px solid #6b7280;
+}
+
+.light-mode .license-tooltip,
+.license-tooltip {
+  background-color: #f3f4f6;
+  color: #1f2937;
+  border: 1px solid #d1d5db;
+}
+
+.license-button {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.license-button:hover .license-tooltip {
+  display: block;
+}

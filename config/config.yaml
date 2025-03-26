@@ -1,0 +1,70 @@
+# Dependency Monitor Configuration for Local Testing
+
+# Data source configuration
+data_source:
+  type: csv
+  path: data/dependencies.csv
+
+# Output configuration
+output:
+  report_dir: reports
+  report_format: markdown
+  dashboard: true
+  dashboard_port: 8080
+
+# Notification settings (disabled for local testing)
+notifications:
+  email:
+    enabled: false
+  slack:
+    enabled: false
+
+# Package ecosystem settings
+ecosystems:
+  npm:
+    enabled: true
+    registry_url: https://registry.npmjs.org/
+    threshold_days: 180  # Days without updates to consider risky
+  pypi:
+    enabled: true
+    registry_url: https://pypi.org/pypi/
+    threshold_days: 180
+
+# GitHub API settings
+github:
+  enabled: true
+  token: ${GITHUB_TOKEN}  # Will be replaced with environment variable
+  api_url: https://api.github.com/
+
+# Security vulnerability scanning settings
+security:
+  enabled: true
+  osv_api_url: https://api.osv.dev/v1/query
+  cache_ttl: 86400  # 24 hours
+
+# Health score calculation metrics
+health_metrics:
+  update_frequency:
+    weight: 30
+    thresholds: [30, 90, 180, 365]  # Days
+  stars:
+    weight: 15
+    thresholds: [100, 500, 1000, 5000, 10000]
+  forks:
+    weight: 10
+    thresholds: [10, 50, 100, 500, 1000]
+  issues:
+    weight: 10
+    thresholds: [10, 50, 100, 500]
+  contributors:
+    weight: 20
+    thresholds: [1, 5, 10, 20, 50]
+  downloads:
+    weight: 15
+    thresholds: [1000, 10000, 100000, 1000000]
+
+# Caching settings to reduce API calls
+cache:
+  enabled: true
+  ttl: 86400  # 24 hours
+  path: data/.dependency_cache

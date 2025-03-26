@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dependency Health Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.2/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.6/purify.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Notification Component -->
+    <div id="notification" class="notification rounded-lg shadow-lg p-4 bg-white border-l-4 border-indigo-500">
+        <div class="flex">
+            <div id="notification-icon" class="flex-shrink-0 text-indigo-500 mt-0.5">
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <div class="ml-3 flex-grow">
+                <h3 id="notification-title" class="text-sm font-medium text-gray-900">Notification Title</h3>
+                <div id="notification-content" class="mt-1 text-sm text-gray-500">
+                    Notification message goes here.
+                </div>
+                <div id="notification-actions" class="mt-2 flex space-x-2">
+                    <!-- Action buttons will be added dynamically -->
+                </div>
+            </div>
+            <div class="ml-auto pl-3">
+                <div class="-mx-1.5 -my-1.5">
+                    <button onclick="closeNotification()" class="inline-flex text-gray-400 hover:text-gray-500">
+                        <span class="sr-only">Dismiss</span>
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="bg-indigo-600 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">Dependency Health Dashboard</h1>
+            <div class="flex items-center space-x-4">
+                <!-- Dark Mode Toggle -->
+                <button id="darkModeToggle" class="bg-white text-indigo-600 p-2 rounded-md font-medium hover:bg-indigo-100 transition">
+                    <svg id="darkModeIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                    </svg>
+                    <svg id="lightModeIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+
+                <!-- File Import Button -->
+                <button id="importBtn" class="bg-white text-indigo-600 px-4 py-2 rounded-md font-medium hover:bg-indigo-100 transition">
+                    Import File
+                </button>
+
+                <button id="refreshBtn" class="bg-white text-indigo-600 px-4 py-2 rounded-md font-medium hover:bg-indigo-100 transition">
+                    Refresh Data
+                </button>
+                <div class="relative">
+                    <select id="projectSelector" class="bg-white text-indigo-600 px-4 py-2 rounded-md font-medium appearance-none pr-8">
+                        <option value="all">All Projects</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-indigo-600">
+                        <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                            <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto p-4">
+        <!-- Enhanced Filtering Options -->
+        <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+            <h2 class="text-lg font-semibold mb-2">Filter Dependencies</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select id="statusFilter" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        <option value="all">All</option>
+                        <option value="upToDate">Up to Date</option>
+                        <option value="needsUpdate">Needs Update</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Risk Level</label>
+                    <select id="riskFilter" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        <option value="all">All</option>
+                        <option value="Low">Low</option>
+                        <option value="Medium">Medium</option>
+                        <option value="High">High</option>
+                        <option value="Critical">Critical</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Security</label>
+                    <select id="securityFilter" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        <option value="all">All</option>
+                        <option value="vulnerable">Vulnerable</option>
+                        <option value="secure">Secure</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                    <input type="text" id="searchFilter" placeholder="Search packages..." class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                </div>
+            </div>
+            <div class="mt-3 flex justify-end">
+                <button id="applyFilters" class="bg-indigo-600 text-white px-4 py-2 rounded-md font-medium hover:bg-indigo-700 transition">
+                    Apply Filters
+                </button>
+                <button id="resetFilters" class="ml-2 bg-gray-200 text-gray-700 px-4 py-2 rounded-md font-medium hover:bg-gray-300 transition">
+                    Reset
+                </button>
+            </div>
+        </div>
+
+        <!-- File Import Modal -->
+        <div id="importModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 hidden flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg p-6 max-w-lg w-full">
+                <div class="flex justify-between items-start">
+                    <h2 class="text-xl font-semibold">Import Dependencies</h2>
+                    <button id="closeModal" class="text-gray-500 hover:text-gray-700">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="mt-4">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Project Name</label>
+                        <input type="text" id="projectName" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" placeholder="Enter project name">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Requirements File</label>
+                        <div class="flex">
+                            <input type="file" id="requirementsFile" class="hidden" accept=".txt">
+                            <input type="text" id="fileNameDisplay" class="flex-grow rounded-l-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" readonly placeholder="No file selected">
+                            <button id="browseFile" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-r-md font-medium hover:bg-gray-300 transition">Browse</button>
+                        </div>
+                        <p class="mt-1 text-sm text-gray-500">Upload a requirements.txt file</p>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end">
+                    <button id="cancelImport" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md font-medium hover:bg-gray-300 transition mr-2">Cancel</button>
+                    <button id="submitImport" class="bg-indigo-600 text-white px-4 py-2 rounded-md font-medium hover:bg-indigo-700 transition">Import</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- License Details Modal -->
+        <div id="licenseModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 hidden flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg p-6 max-w-lg w-full max-h-screen overflow-y-auto">
+                <div class="flex justify-between items-start">
+                    <h2 class="text-xl font-semibold">License Details</h2>
+                    <button id="closeLicenseModal" class="text-gray-500 hover:text-gray-700">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div id="licenseContent" class="mt-4 text-sm whitespace-pre-wrap text-gray-700"></div>
+            </div>
+        </div>
+        
+        <!-- High Risk Dependencies Modal -->
+        <div id="highRiskModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 hidden flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg p-6 max-w-4xl w-full max-h-screen overflow-y-auto">
+                <div class="flex justify-between items-start">
+                    <h2 class="text-xl font-semibold text-red-600">High Risk Dependencies</h2>
+                    <button id="closeHighRiskModal" class="text-gray-500 hover:text-gray-700">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <p class="mt-2 text-gray-600">The following dependencies have high abandonment risk and may require your attention:</p>
+                <div id="highRiskContent" class="mt-4 overflow-y-auto max-h-96">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Package</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Version</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Health</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Risk</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="highRiskTableBody" class="bg-white divide-y divide-gray-200">
+                            <!-- High risk dependencies will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-6 flex justify-end">
+                    <button id="closeHighRiskBtn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md font-medium hover:bg-gray-300 transition">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overview Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h2 class="text-gray-500 text-sm font-medium">Total Dependencies</h2>
+                <div class="mt-2 flex items-end justify-between">
+                    <p id="totalDeps" class="text-3xl font-semibold text-gray-900">0</p>
+                    <div class="flex items-center text-green-500">
+                        <span class="text-sm font-medium">Tracked</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h2 class="text-gray-500 text-sm font-medium">Needs Update</h2>
+                <div class="mt-2 flex items-end justify-between">
+                    <p id="needsUpdateDeps" class="text-3xl font-semibold text-yellow-500">0</p>
+                    <div class="flex items-center text-yellow-500">
+                        <span class="text-sm font-medium">Dependencies</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h2 class="text-gray-500 text-sm font-medium">Vulnerabilities</h2>
+                <div class="mt-2 flex items-end justify-between">
+                    <p id="vulnerableDeps" class="text-3xl font-semibold text-red-600">0</p>
+                    <div class="flex items-center text-red-600">
+                        <span class="text-sm font-medium">Dependencies</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h2 class="text-gray-500 text-sm font-medium">High Risk</h2>
+                <div class="mt-2 flex items-end justify-between">
+                    <p id="highRiskDeps" class="text-3xl font-semibold text-red-500">0</p>
+                    <div class="flex items-center text-red-500">
+                        <span class="text-sm font-medium">Dependencies</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h2 class="text-gray-500 text-sm font-medium">Average Health</h2>
+                <div class="mt-2 flex items-end justify-between">
+                    <p id="avgHealth" class="text-3xl font-semibold text-indigo-500">0</p>
+                    <div class="flex items-center text-indigo-500">
+                        <span class="text-sm font-medium">Score</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    
+        <!-- Charts Row -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h2 class="text-lg font-semibold mb-4">Health Distribution</h2>
+                <canvas id="healthChart" height="200"></canvas>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h2 class="text-lg font-semibold mb-4">Risk Assessment</h2>
+                <canvas id="riskChart" height="200"></canvas>
+            </div>
+        </div>
+    
+        <!-- License Compliance Section -->
+        <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+            <h2 class="text-lg font-semibold mb-4">License Compliance</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="font-medium text-gray-700 mb-2">License Distribution</h3>
+                    <canvas id="licenseChart" height="200"></canvas>
+                </div>
+                <div>
+                    <h3 class="font-medium text-gray-700 mb-2">License Policy</h3>
+                    <div class="bg-gray-50 p-4 rounded">
+                        <div class="mb-3">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                                Allowed: MIT, BSD, Apache 2.0
+                            </span>
+                        </div>
+                        <div class="mb-3">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                                Review Required: LGPL, Mozilla
+                            </span>
+                        </div>
+                        <div>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                                Restricted: AGPL, GPL
+                            </span>
+                        </div>
+                    </div>
+                    <div class="mt-4" id="licenseIssues">
+                        <!-- License issues will be populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    
+        <!-- Latest Report -->
+        <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+            <h2 class="text-lg font-semibold mb-4">Latest Report</h2>
+            <div id="reportContent" class="prose max-w-none">
+                Loading report...
+            </div>
+        </div>
+    
+        <!-- Dependencies Table -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+            <div class="px-4 py-5 border-b border-gray-200 sm:px-6">
+                <h2 class="text-lg font-semibold">All Dependencies</h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    Complete list of tracked dependencies and their health metrics.
+                </p>
+            </div>
+            <div class="table-container overflow-x-auto">
+                <table class="dependency-table min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Package
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Version
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Latest
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Security
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Health
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Risk
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                License
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Last Updated
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="dependenciesTable" class="bg-white divide-y divide-gray-200">
+                        <tr>
+                            <td colspan="9" class="px-6 py-4 text-center text-sm text-gray-500">
+                                Loading dependencies...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+    
+    <!-- License tooltip container -->
+    <div id="licenseTooltip" class="license-tooltip"></div>
+    
+    <script src="scripts.js"></script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Local development settings
+.env
+.venv
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Dependency Monitor specific files
+# Keep the dependencies.csv file for GitHub sharing
+data/.dependency_cache/
+data/temp/
+
+# Generated reports - keep structure but not specific content
+reports/*.json
+
+# Logs
+*.log
+
+# System files
+.DS_Store
+Thumbs.db
